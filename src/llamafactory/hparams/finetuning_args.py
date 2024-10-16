@@ -125,6 +125,10 @@ class LoraArguments:
         metadata={"help": "Whether or not to create a new adapter with randomly initialized weight."},
     )
 
+    use_ulysses_sp: bool = field(
+        default=False,
+        metadata={"help": "Use deepspeed ulysses for sequnce parallel."},
+    )
 
 @dataclass
 class RLHFArguments:

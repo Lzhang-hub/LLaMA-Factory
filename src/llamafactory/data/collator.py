@@ -16,10 +16,10 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List,Literal, Optional, Sequence,Union
 
 import torch
-from transformers import DataCollatorForSeq2Seq
+from transformers import DataCollatorForSeq2Seq,DataCollatorForLanguageModeling
 
 
 if TYPE_CHECKING:
@@ -100,6 +100,31 @@ class MultiModalDataCollatorForSeq2Seq(DataCollatorForSeq2Seq):
         features: Dict[str, "torch.Tensor"] = super().__call__(features)
         features.update(mm_inputs)
         return features
+
+@dataclass
+class SpDataCollatorForLanguageModeling(DataCollatorForLanguageModeling):
+    r"""
+    Data collator for sequence parallel with deepspeed ulysses
+    """
+    def torch_call(self, examples: List[Union[List[int], Any, Dict[str, Any]]]) -> Dict[str, Any]:
+        # Handle dict or lists with proper padding and conversion to tensor.
+        batch = super().torch_call(examples)
+        from deepspeed.utils import groups
+        seq_parallel_world_size = groups._get_sequence_parallel_world_size()
+        seq_parallel_rank = groups._get_sequence_parallel_rank()
+        # print(f'zldebug sp world size : {seq_parallel_world_size}')
+        # print(f'zldebug sp rank : {seq_parallel_rank}')
+        seq_length = batch["input_ids"].size(1)
+        # print(f'zldebug raw input shape: {batch["input_ids"].shape}')
+        assert seq_length % seq_parallel_world_size == 0
+        sub_seq_length = seq_length // seq_parallel_world_size
+        sub_seq_start = seq_parallel_rank * sub_seq_length
+        sub_seq_end = (seq_parallel_rank + 1) * sub_seq_length
+
+        batch["input_ids"] = batch["input_ids"][:, sub_seq_start:sub_seq_end]
+        batch["labels"] = batch["labels"][:, sub_seq_start:sub_seq_end]
+        # print(f'zldebug after sp input shape: {batch["input_ids"].shape}')
+        return batch
 
 
 @dataclass

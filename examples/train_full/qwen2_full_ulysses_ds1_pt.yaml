@@ -1,0 +1,40 @@
+### model
+model_name_or_path: /aistudio/workspace/wqtest/zhanglei/models/hf/Qwen/Qwen2-1.5B-Instruct
+
+### method
+stage: pt
+do_train: true
+finetuning_type: full
+deepspeed: examples/deepspeed/ds_z3_sp_config.json
+
+### dataset
+dataset: c4_demo
+cutoff_len: 1024
+max_samples: 1000
+overwrite_cache: true
+preprocessing_num_workers: 16
+
+### output
+output_dir: /aistudio/workspace/wqtest/zhanglei/mlsys/LLM/train/long-context-train/ckpt
+logging_steps: 10
+save_steps: 500
+plot_loss: true
+overwrite_output_dir: true
+
+### train
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+learning_rate: 1.0e-4
+num_train_epochs: 100.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+bf16: true
+ddp_timeout: 180000000
+use_ulysses_sp: true
+# sequence_parallel: 2
+
+### eval
+val_size: 0.1
+per_device_eval_batch_size: 1
+eval_strategy: steps
+eval_steps: 500
